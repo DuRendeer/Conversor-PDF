@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor HTML para PDF - Apresentações</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5em;
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 215, 0, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.02);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 4px solid #ffd700;
+        }
+
+        .control-group h3 {
+            margin-bottom: 15px;
+            color: #87ceeb;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            min-width: 150px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-area {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .slide-preview {
+            display: none;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            background: white;
+            overflow: hidden;
+        }
+
+        .slide-preview.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .success {
+            color: #51cf66;
+        }
+
+        .info {
+            color: #74c0fc;
+        }
+
+        .slide-counter {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #ffd700;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Conversor HTML → PDF</h1>
+        <p style="text-align: center; margin-bottom: 30px; font-size: 1.1em;">
+            Converta suas apresentações HTML em PDF profissionais
+        </p>
+
+        <!-- Área de Upload -->
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Clique aqui ou arraste seu arquivo HTML</div>
+            <div class="upload-subtext">Suporta apresentações com slides múltiplos</div>
+            <input type="file" id="fileInput" accept=".html,.htm">
+        </div>
+
+        <!-- Controles -->
+        <div class="controls">
+            <div class="control-group">
+                <h3>📐 Configurações de Página</h3>
+                <label for="pageFormat">Formato da Página:</label>
+                <select id="pageFormat">
+                    <option value="a4">A4 (210 × 297 mm)</option>
+                    <option value="letter">Letter (216 × 279 mm)</option>
+                    <option value="a3">A3 (297 × 420 mm)</option>
+                    <option value="a5">A5 (148 × 210 mm)</option>
+                </select>
+
+                <label for="orientation">Orientação:</label>
+                <select id="orientation">
+                    <option value="landscape">Paisagem (Recomendado)</option>
+                    <option value="portrait">Retrato</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <h3>🎨 Qualidade</h3>
+                <label for="quality">Qualidade da Imagem:</label>
+                <select id="quality">
+                    <option value="1">Baixa (Arquivo menor)</option>
+                    <option value="2" selected>Média (Recomendado)</option>
+                    <option value="3">Alta (Arquivo maior)</option>
+                </select>
+
+                <label for="margin">Margem (mm):</label>
+                <input type="number" id="margin" value="10" min="0" max="50">
+            </div>
+
+            <div class="control-group">
+                <h3>📋 Informações</h3>
+                <label for="title">Título do PDF:</label>
+                <input type="text" id="title" placeholder="Minha Apresentação">
+
+                <label for="author">Autor:</label>
+                <input type="text" id="author" placeholder="Seu Nome">
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="button-group">
+            <button class="btn btn-secondary" id="previewBtn" disabled>👁️ Visualizar Slides</button>
+            <button class="btn btn-primary" id="convertBtn" disabled>📄 Gerar PDF</button>
+            <button class="btn btn-secondary" id="downloadBtn" disabled>💾 Download PDF</button>
+        </div>
+
+        <!-- Barra de Progresso -->
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- Status -->
+        <div class="status" id="status"></div>
+
+        <!-- Área de Preview -->
+        <div class="preview-area" id="previewArea">
+            <div class="slide-counter" id="slideCounter"></div>
+            <div id="slideContainer"></div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-secondary" id="prevSlide">← Anterior</button>
+                <button class="btn btn-secondary" id="nextSlide">Próximo →</button>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🎯</div>
+                <h4>Slides Automáticos</h4>
+                <p>Detecta slides automaticamente</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🖼️</div>
+                <h4>Alta Qualidade</h4>
+                <p>Preserva imagens e layout</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h4>Rápido</h4>
+                <p>Conversão em segundos</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💾</div>
+                <h4>Download Direto</h4>
+                <p>Arquivo pronto para usar</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="converter-script.js"></script>
+</body>
+</html>
